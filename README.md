@@ -2,7 +2,8 @@
 
 物聯網應用與資料分析 HW2。依 CRISP-DM 六個步驟，用線性回歸（單純線性回歸、多元線性回歸、Auto Regression）分析兩個 Kaggle 公開資料集，並提供「自訂 CSV URL」功能，可以即時檢視任意 CSV 資料集的基本資訊。
 
-**網站：<https://supermlk.github.io/iot-hw2/>**
+**repo：<https://github.com/superMLK/iot-hw2/>**
+**demo網站：<https://supermlk.github.io/iot-hw2/>**
 
 - 下拉選單切換兩個內建資料集，每個資料集都有 CRISP-DM 六個步驟的完整內容。
 - 特徵選擇使用三種方法（相關係數、VIF、逐步回歸），並比較每個特徵在各方法中是否被保留。
