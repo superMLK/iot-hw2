@@ -1,0 +1,135 @@
+# Bike Sharing（每日租借量）CRISP-DM 文字內容
+# 規則：結果數值一律使用佔位符 {{path|fmt}}，由管線代入；不可手打結果數字。
+# 支援的 Markdown：### 標題、段落、- 清單、1. 編號清單、**粗體**、`程式碼`、> 引言、[連結](網址)
+
+feature_labels:
+  yr: 年份（0 = 2011、1 = 2012）
+  holiday: 是否為國定假日
+  temp: 標準化氣溫
+  atemp: 標準化體感溫度
+  hum: 標準化濕度
+  windspeed: 標準化風速
+  season_2: 季節：夏
+  season_3: 季節：秋
+  season_4: 季節：冬
+  weathersit_2: 天氣：起霧或多雲
+  weathersit_3: 天氣：小雨或小雪
+  mnth_2: 2 月
+  mnth_3: 3 月
+  mnth_4: 4 月
+  mnth_5: 5 月
+  mnth_6: 6 月
+  mnth_7: 7 月
+  mnth_8: 8 月
+  mnth_9: 9 月
+  mnth_10: 10 月
+  mnth_11: 11 月
+  mnth_12: 12 月
+  weekday_1: 星期一
+  weekday_2: 星期二
+  weekday_3: 星期三
+  weekday_4: 星期四
+  weekday_5: 星期五
+  weekday_6: 星期六
+
+success:
+  metric: 測試集 R²
+  value: best.metrics.r2
+  threshold: 0.70
+
+conclusion:
+  met: |-
+    最佳模型「{{best.label}}」的測試集 R² 為 {{best.metrics.r2|.3f}}，**達到**成功標準（R² ≥ {{success.threshold|.2f}}），
+    可以作為每日調度車輛的參考；平均絕對誤差約 {{best.metrics.mae|,.0f}} 次租借，排班時建議預留這個幅度的緩衝。
+  not_met: |-
+    最佳模型「{{best.label}}」的測試集 R² 為 {{best.metrics.r2|.3f}}，**未達到**成功標準（R² ≥ {{success.threshold|.2f}}）。
+    主要原因是測試期（2012 年下半年）的平均租借量 {{meta.target_mean_test|,.0f}} 次，明顯高於訓練期的 {{meta.target_mean_train|,.0f}} 次，
+    模型只學到過去的水準，無法完全追上需求成長。這個模型適合用來看「天氣與季節如何影響需求」，
+    但直接拿來排班時，需要搭配近期實際租借量做修正（例如 AR 模型的一步預測）。
+
+crisp_dm:
+  business_understanding: |
+    ### 業務問題
+    共享單車業者每天都要決定各站點要準備多少車、何時安排維修。車太少，使用者租不到車；車太多，會佔用調度與維修人力。
+    本分析想回答的問題是：**能不能根據日期、季節與天氣，事先估計當天的總租借量（`cnt`）？**
+
+    ### 分析目標
+    - 建立線性回歸模型預測每日總租借量，並比較單純線性回歸、多元線性回歸與 Auto Regression。
+    - 找出影響租借量的主要因素（例如氣溫、天氣、年份）。
+    - 為每個預測值提供 95% 預測區間，讓調度人員知道預測的可能範圍。
+
+    ### 成功標準
+    - 測試集 R² ≥ {{success.threshold|.2f}}（測試集是時間上最後 20% 的日子，模型訓練時完全沒看過）。
+    - 95% 預測區間的實際覆蓋率接近 95%。
+
+    ### 預測結果的使用方式
+    隔天的預測值作為車輛調度與排班的基準，預測區間上緣作為「需求高峰」的備車量參考；若預測值偏低的日子，可安排車輛維修。
+
+  data_understanding: |
+    資料來自美國華盛頓特區 Capital Bikeshare 系統，共 {{du.n_rows|int}} 天（2011–2012 年）的每日紀錄、{{du.n_cols}} 個欄位。
+    扣除目標變數 `cnt` 與流水號 `instant` 後，特徵數為 **{{du.n_features}}**，符合作業「大於 13、小於 40」的要求。
+
+    - 缺失值共 {{du.n_missing_total}} 個，重複列 {{du.n_duplicates}} 筆。
+    - 氣溫、體感溫度、濕度、風速已經由原始資料提供者標準化到 0–1 之間。
+    - 與 `cnt` 相關性最高的是 `{{du.top_corr_features.0.feature}}`（r = {{du.top_corr_features.0.r|.3f}}）與 `{{du.top_corr_features.1.feature}}`（r = {{du.top_corr_features.1.r|.3f}}）。
+      這兩欄相加剛好等於 `cnt`，相關性當然很高，但它們是「當天結束後才知道的結果」，下一步必須移除。
+    - `temp` 與 `atemp` 幾乎是同一件事（訓練集上 r = {{fs.high_corr_pairs.0.r|.3f}}），之後交給 VIF 處理。
+
+  data_preparation: |
+    > **資料洩漏提醒**：`casual`（非會員租借量）＋ `registered`（會員租借量）＝ `cnt`。
+    > 如果把它們放進模型，模型只要把兩個數字相加就能「預測」成功，R² 會接近 1，但實務上預測當下根本拿不到這兩個值。因此一律移除。
+
+    其餘處理：
+    - `instant` 是流水號，`workingday` 可以由 `weekday` 與 `holiday` 完全推得，兩者都移除。
+    - `season`、`weathersit`、`mnth`、`weekday` 是類別代碼，做 one-hot 編碼並丟棄一個基準類別，避免完全共線。
+    - 這份資料是時間序列，所以**依時間順序切分**：前 {{meta.n_train|int}} 天為訓練集、後 {{meta.n_test|int}} 天為測試集，不做隨機切分，避免模型「偷看未來」。
+
+    處理後共有 {{prep.after.features}} 個候選特徵進入特徵選擇。
+
+  modeling: |
+    ### 特徵選擇（只用訓練集）
+    1. **相關係數篩選**：保留與 `cnt` 的 |r| ≥ 0.1 的特徵；兩個特徵彼此 |r| > 0.8 時，只留與目標較相關的那一個。共保留 {{fs.n_corr_kept}} / {{fs.n_candidates}} 個。這個方法只用來比較，不直接決定模型。
+    2. **VIF**：每輪移除 VIF 最高且大於 10 的特徵，依序移除了 {{fs.vif_removed}}，剩下 {{fs.n_after_vif}} 個。
+    3. **逐步回歸**：以 VIF 篩選後的特徵為候選，從空模型開始，每一步選擇讓 AIC 下降最多的加入或移除動作，最後保留 **{{fs.n_final}}** 個特徵。
+
+    特徵數從 {{fs.n_candidates}} 個減少到 {{fs.n_final}} 個。最終特徵集採用逐步回歸的結果。
+
+    ### 模型
+    - **單純線性回歸**：`cnt ~ {{model.slr.features.0}}`，選擇訓練集上與 `cnt` 相關性最高的單一特徵。
+    - **多元線性回歸（全部特徵）**：使用全部 {{prep.after.features}} 個特徵，作為比較基準。
+    - **多元線性回歸（選擇後特徵）**：使用逐步回歸選出的 {{fs.n_final}} 個特徵，是本分析的主要模型。
+    - **Auto Regression**：只用過去的 `cnt` 預測今天的 `cnt`。以 AIC 在 1–14 期中選出 **AR({{model.ar.ar_order}})**；
+      測試期採「一步預測」，也就是每天都用前幾天的實際租借量來預測當天。
+
+    OLS 模型的係數表中，p 值小於 0.05 的係數代表在 5% 顯著水準下與 `cnt` 有顯著關係。
+
+  evaluation: |
+    ### 測試集表現
+    - 單純線性回歸（`{{model.slr.features.0}}`）：R² = {{model.slr.metrics.r2|.3f}}。R² 小於 0 代表模型在測試期的表現比「直接用測試期平均值猜」還差；
+      只靠氣溫無法反映 2012 年整體需求成長。
+    - 多元線性回歸（選擇後特徵）：R² = {{model.mlr_selected.metrics.r2|.3f}}，RMSE = {{model.mlr_selected.metrics.rmse|,.0f}}，與全部特徵模型（R² = {{model.mlr_all.metrics.r2|.3f}}）相比，用較少的特徵得到相近的表現。
+    - AR({{model.ar.ar_order}})：R² = {{model.ar.metrics.r2|.3f}}，只用過去的租借量，不需要任何天氣資訊。
+
+    ### 預測區間
+    最佳模型的 95% 預測區間覆蓋率為 {{best.metrics.pi_coverage|pct}}。理想值應接近 95%；若明顯偏低，表示測試期的波動比訓練期大，區間被低估了。
+
+    ### 交叉驗證
+    使用 `TimeSeriesSplit`（5 折）在訓練集上驗證，每一折都只用「更早」的資料訓練。最佳模型的平均 R² 為 {{best.cv.mean|.3f}} ± {{best.cv.std|.3f}}。
+    前幾折的訓練資料不到一年，模型沒看過後面的月份，分數偏低或波動大是時間序列交叉驗證的正常現象。
+
+    ### 結論
+    {{conclusion}}
+
+  deployment: |
+    ### 部署架構
+    本網站是靜態網站，部署在 GitHub Pages：{{meta.site_url}}。
+    每次推送到 `main` 分支時，GitHub Actions 會依序執行 Python 分析管線（產生本頁所有數字與圖表）、前端單元測試、建置網站，最後發布。任一步驟失敗就不會部署。
+
+    ### 重新訓練
+    把新的 `day.csv` 放進 `analysis/data/raw/` 後推送，管線會自動重新執行資料準備、特徵選擇、建模與評估，網站內容跟著更新。管線使用固定亂數種子，同一份資料重跑結果相同。
+
+    ### 限制與改進方向
+    - 只有兩年資料，模型難以學到長期成長趨勢；可以加入更多年份，或加入時間趨勢項。
+    - 線性模型無法表達「氣溫太高反而減少騎車」這類非線性關係；可以加入氣溫平方項，或改用樹模型比較。
+    - 逐步回歸選出的特徵，其 p 值會有選擇偏誤，解讀係數時要保守。
+    - 實務排班可以結合多元回歸（天氣與季節）與 AR（近期趨勢），或使用 ARIMAX 這類同時考慮兩者的模型。

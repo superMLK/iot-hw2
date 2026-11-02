@@ -1,0 +1,136 @@
+# King County 房價 CRISP-DM 文字內容
+# 規則：結果數值一律使用佔位符 {{path|fmt}}，由管線代入；不可手打結果數字。
+# 支援的 Markdown：### 標題、段落、- 清單、1. 編號清單、**粗體**、`程式碼`、> 引言、[連結](網址)
+
+feature_labels:
+  bedrooms: 臥室數
+  bathrooms: 浴室數
+  sqft_living: 室內居住面積（平方英尺）
+  sqft_lot: 土地面積（平方英尺）
+  floors: 樓層數
+  waterfront: 是否臨水
+  view: 景觀評分（0–4）
+  condition: 屋況評分（1–5）
+  grade: 建築等級（1–13）
+  lat: 緯度
+  long: 經度
+  sqft_living15: 鄰近 15 戶平均居住面積
+  sqft_lot15: 鄰近 15 戶平均土地面積
+  sale_year: 售出年份
+  is_renovated: 是否翻修過
+  house_age: 屋齡（售出年 − 建造年）
+  has_basement: 是否有地下室
+  sale_month_2: 2 月售出
+  sale_month_3: 3 月售出
+  sale_month_4: 4 月售出
+  sale_month_5: 5 月售出
+  sale_month_6: 6 月售出
+  sale_month_7: 7 月售出
+  sale_month_8: 8 月售出
+  sale_month_9: 9 月售出
+  sale_month_10: 10 月售出
+  sale_month_11: 11 月售出
+  sale_month_12: 12 月售出
+
+success:
+  metric: 測試集 R²（log 尺度）
+  value: best.metrics.r2
+  threshold: 0.80
+
+conclusion:
+  met: |-
+    最佳模型「{{best.label}}」的測試集 R²（log 尺度）為 {{best.metrics.r2|.3f}}，**達到**成功標準（R² ≥ {{success.threshold|.2f}}）。
+    換算回價格後，平均絕對誤差約 {{best.metrics.mae|,.0f}} 美元，可以作為買賣雙方判斷開價是否合理的參考。
+  not_met: |-
+    最佳模型「{{best.label}}」的測試集 R²（log 尺度）為 {{best.metrics.r2|.3f}}，**未達到**成功標準（R² ≥ {{success.threshold|.2f}}）。
+    換算回價格後，平均絕對誤差約 {{best.metrics.mae|,.0f}} 美元、RMSE 約 {{best.metrics.rmse|,.0f}} 美元。
+    模型已經能抓到面積、等級、地點等主要因素，適合用來判斷「開價是否明顯偏離行情」，但還不夠精準到直接當作估價。
+    主要限制是沒有使用 zipcode 等更細的地點資訊，而且線性模型無法表達地點與面積之間的交互作用。
+
+crisp_dm:
+  business_understanding: |
+    ### 業務問題
+    買房與賣房時，最常見的問題是「這個價格合理嗎？」本分析使用美國華盛頓州 King County（含西雅圖）的實際成交紀錄，
+    **依房屋條件估算合理的成交價**，協助買方判斷開價是否偏高、賣方設定合理的售價。
+
+    ### 分析目標
+    - 建立線性回歸模型，以房屋面積、等級、屋況、地點等條件預測成交價（`price`）。
+    - 比較單純線性回歸與多元線性回歸，並找出影響房價的主要因素。
+    - 為每個預測值提供 95% 預測區間，表達「同樣條件的房子，價格大概落在哪個範圍」。
+
+    ### 成功標準
+    - 測試集 R² ≥ {{success.threshold|.2f}}（以 log(price) 計算，測試集是隨機保留、模型沒看過的 20% 交易）。
+    - 95% 預測區間的實際覆蓋率接近 95%。
+
+    ### 預測結果的使用方式
+    把待售房屋的條件輸入模型，得到預測價格與預測區間。開價若高於區間上緣，代表明顯偏離行情，需要更多理由（例如近期整修）支持。
+
+  data_understanding: |
+    資料為 2014 年 5 月至 2015 年 5 月 King County 的房屋成交紀錄，共 {{du.n_rows|int}} 筆、{{du.n_cols}} 個欄位。
+    扣除目標變數 `price` 與房屋編號 `id` 後，特徵數為 **{{du.n_features}}**，符合作業「大於 13、小於 40」的要求。
+
+    - 缺失值共 {{du.n_missing_total}} 個，完全重複的列 {{du.n_duplicates}} 筆；同一個 `id` 可能出現兩次，代表同一棟房子在期間內轉手。
+    - 與 `price` 相關性最高的前三個欄位是 `{{du.top_corr_features.0.feature}}`（r = {{du.top_corr_features.0.r|.3f}}）、`{{du.top_corr_features.1.feature}}`（r = {{du.top_corr_features.1.r|.3f}}）、`{{du.top_corr_features.2.feature}}`（r = {{du.top_corr_features.2.r|.3f}}）。
+    - 房價分布明顯右偏（少數豪宅價格很高），平均價格 {{du.describe.price.mean|,.0f}} 美元，高於中位數 {{du.describe.price.median|,.0f}} 美元，因此建模時改用 log(price)。
+    - `sqft_living` ＝ `sqft_above` ＋ `sqft_basement`，三者完全共線，需要在資料準備時處理。
+
+  data_preparation: |
+    主要處理：
+    - **異常值**：依明確規則移除明顯錯誤的資料（例如臥室數 33 間、臥室或浴室數為 0），共移除 {{prep.n_removed_rows}} 筆，各規則的筆數列在下方表格。
+    - **日期**：`date` 拆成 `sale_year` 與 `sale_month`，月份做 one-hot（以 1 月為基準）。
+    - **翻修與屋齡**：`yr_renovated` 改為是否翻修過（`is_renovated`），並新增屋齡 `house_age`；因為屋齡＝售出年－建造年，移除 `yr_built` 避免完全共線。
+    - **面積**：移除 `sqft_above`，`sqft_basement` 改成是否有地下室（`has_basement`）。
+    - **地點**：`zipcode` 類別太多，one-hot 會大幅增加特徵且難以解讀，所以不使用，改以 `lat`、`long` 代表位置。
+      這個取捨的代價是模型只能用「經緯度的線性變化」描述地點，無法表達特定學區或社區的溢價。
+    - **目標變數**：取 log(price) 建模，預測值與區間最後再以 exp 轉回美元。
+    - **切分**：交易之間沒有時間依賴，隨機切分 80/20（`random_state = 42`），訓練集 {{meta.n_train|int}} 筆、測試集 {{meta.n_test|int}} 筆。
+
+    處理後共有 {{prep.after.features}} 個候選特徵進入特徵選擇。
+
+  modeling: |
+    ### 特徵選擇（只用訓練集）
+    1. **相關係數篩選**：保留與 log(price) 的 |r| ≥ 0.1 的特徵；兩個特徵彼此 |r| > 0.8 時，只留與目標較相關的那一個。共保留 {{fs.n_corr_kept}} / {{fs.n_candidates}} 個。這個方法只用來比較，不直接決定模型。
+    2. **VIF**：每輪移除 VIF 最高且大於 10 的特徵，移除了 {{fs.vif_removed}}，剩下 {{fs.n_after_vif}} 個。
+    3. **逐步回歸**：以 VIF 篩選後的特徵為候選，從空模型開始，每一步選擇讓 AIC 下降最多的加入或移除動作，最後保留 **{{fs.n_final}}** 個特徵。
+
+    特徵數從 {{fs.n_candidates}} 個減少到 {{fs.n_final}} 個。最終特徵集採用逐步回歸的結果。
+
+    ### 模型
+    - **單純線性回歸**：`log(price) ~ sqft_living`，只用居住面積。
+    - **多元線性回歸（全部特徵）**：使用全部 {{prep.after.features}} 個特徵，作為比較基準。
+    - **多元線性回歸（選擇後特徵）**：使用逐步回歸選出的 {{fs.n_final}} 個特徵，是本分析的主要模型。
+
+    因為目標是 log(price)，係數可以近似解讀為「該特徵增加 1 單位時，房價大約變動 (e^係數 − 1) × 100%」。
+    p 值小於 0.05 的係數代表在 5% 顯著水準下與房價有顯著關係。
+
+  evaluation: |
+    ### 測試集表現
+    R² 與 Adjusted R² 以 log(price) 計算；RMSE 與 MAE 已轉回美元。
+    - 單純線性回歸（`sqft_living`）：R² = {{model.slr.metrics.r2|.3f}}，MAE = {{model.slr.metrics.mae|,.0f}} 美元。
+    - 多元線性回歸（選擇後特徵）：R² = {{model.mlr_selected.metrics.r2|.3f}}，MAE = {{model.mlr_selected.metrics.mae|,.0f}} 美元，RMSE = {{model.mlr_selected.metrics.rmse|,.0f}} 美元。
+    - 多元線性回歸（全部特徵）：R² = {{model.mlr_all.metrics.r2|.3f}}。選擇後模型用 {{fs.n_final}} 個特徵就得到相近的表現。
+
+    ### 預測區間
+    最佳模型的 95% 預測區間覆蓋率為 {{best.metrics.pi_coverage|pct}}，理想值應接近 95%。
+    區間是在 log 尺度計算再取 exp，因此轉回美元後**上緣離預測值較遠、下緣較近**，這是對數轉換的正常現象，代表高價方向的不確定性比較大。
+
+    ### 交叉驗證
+    使用 `KFold`（5 折、打亂、random_state = 42）在訓練集上驗證，最佳模型的平均 R² 為 {{best.cv.mean|.3f}} ± {{best.cv.std|.3f}}。
+    標準差越小，代表模型在不同資料子集上的表現越穩定。
+
+    ### 結論
+    {{conclusion}}
+
+  deployment: |
+    ### 部署架構
+    本網站是靜態網站，部署在 GitHub Pages：{{meta.site_url}}。
+    每次推送到 `main` 分支時，GitHub Actions 會依序執行 Python 分析管線（產生本頁所有數字與圖表）、前端單元測試、建置網站，最後發布。任一步驟失敗就不會部署。
+
+    ### 重新訓練
+    把新的 `kc_house_data.csv` 放進 `analysis/data/raw/` 後推送，管線會自動重新執行資料準備、特徵選擇、建模與評估，網站內容跟著更新。管線使用固定亂數種子，同一份資料重跑結果相同。
+
+    ### 限制與改進方向
+    - 資料只涵蓋一年（2014–2015），房市行情會隨時間改變，實際使用前需要用新資料重新訓練。
+    - 預測值是 exp(log 預測)，比較接近「中位數」而不是「平均數」，平均來說會略為低估價格。
+    - 地點只用經緯度線性表示；可以改用 zipcode 目標編碼或地理分群，通常能明顯改善表現。
+    - 可以嘗試面積與等級的交互作用、面積的非線性項，或改用梯度提升樹做比較。

@@ -1,0 +1,14 @@
+# 分析管線
+pandas==3.1.0
+numpy==2.4.6
+scipy==1.17.1
+statsmodels==0.15.0
+scikit-learn==1.9.1
+matplotlib==3.11.2
+PyYAML==6.0.3
+# 繳交物（Word 報告、資訊圖表）
+python-docx==1.2.0
+playwright==1.64.1
+qrcode==8.2
+# 測試
+pytest==9.2.0

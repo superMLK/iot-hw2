@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node
+node_modules/
+web/dist/
+
+# 管線輸出（由 CI 產生，不提交）
+web/public/data/
+
+# 系統
+.DS_Store
+
+# 本機 Claude 工具設定（不屬於作業內容）
+.claude/

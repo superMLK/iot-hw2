@@ -1,0 +1,54 @@
+# 資料集中繼資料（管線、網站、報告共用）
+# GitHub Pages 網址（部署後填入；README、報告、資訊圖表 QR code 會使用）
+site_url: https://supermlk.github.io/iot-hw2/
+
+# 授權查核日期：2026-11-02（以 Kaggle API 的 datasets/view 與 UCI 頁面查閱）
+datasets:
+  - id: bike
+    name: Bike Sharing（每日租借量）
+    short_name: Bike Sharing
+    kaggle_url: https://www.kaggle.com/datasets/lakshmi25npathi/bike-sharing-dataset
+    origin_url: https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
+    # Kaggle 頁面的授權欄位標示為 Unknown；原始出處 UCI 以 CC BY 4.0 釋出，並要求引用原論文
+    license: CC BY 4.0（UCI 原始出處；Kaggle 頁面標示為 Unknown）
+    license_url: https://creativecommons.org/licenses/by/4.0/
+    citation: >-
+      Fanaee-T, H., & Gama, J. (2013). Event labeling combining ensemble detectors
+      and background knowledge. Progress in Artificial Intelligence, 2, 113–127.
+      doi:10.1007/s13748-013-0040-3
+    file: day.csv
+    target: cnt
+    id_cols: [instant]
+    date_col: dteday
+    split: time        # 依時間順序前 80% 訓練、後 20% 測試
+    test_size: 0.2
+    log_target: false
+    slr_feature: auto    # 訓練集上與 cnt 的 |r| 最高者
+    ar: true
+    ar_maxlag: 14
+    cv: timeseries
+    content: bike.zh-TW.yaml
+
+  - id: house
+    name: King County 房價
+    short_name: King County 房價
+    kaggle_url: https://www.kaggle.com/datasets/harlfoxem/housesalesprediction
+    origin_url: null
+    license: "CC0: Public Domain"
+    license_url: https://creativecommons.org/publicdomain/zero/1.0/
+    citation: >-
+      harlfoxem (2016). House Sales in King County, USA. Kaggle.
+      https://www.kaggle.com/datasets/harlfoxem/housesalesprediction
+    file: kc_house_data.csv
+    target: price
+    id_cols: [id]
+    date_col: date
+    split: random      # 隨機 80/20，random_state = 42
+    test_size: 0.2
+    random_state: 42
+    log_target: true
+    slr_feature: sqft_living
+    ar: false
+    cv: kfold
+    max_points: 500
+    content: house.zh-TW.yaml
