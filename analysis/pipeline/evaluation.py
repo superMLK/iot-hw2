@@ -65,10 +65,21 @@ def even_sample_indices(n: int, max_points: int | None) -> np.ndarray:
     return np.unique(np.linspace(0, n - 1, max_points).round().astype(int))
 
 
+def stable_order(primary, secondary=None) -> np.ndarray:
+    """跨平台穩定的排序：先四捨五入到 9 位有效數字（消除最後一位的浮點差異），同分時再依 secondary 排序。"""
+    def r(a):
+        a = np.asarray(a, dtype=float)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            mag = np.where(a == 0, 0, np.floor(np.log10(np.abs(a))))
+        return np.round(a / 10.0**mag, 8) * 10.0**mag
+    keys = (r(secondary), r(primary)) if secondary is not None else (r(primary),)
+    return np.lexsort(keys)
+
+
 def residual_diagnostics(fitted, resid, max_points: int | None) -> dict:
     fitted = np.asarray(fitted, dtype=float)
     resid = np.asarray(resid, dtype=float)
-    order = np.argsort(fitted, kind="mergesort")
+    order = stable_order(fitted, resid)
     idx = order[even_sample_indices(len(order), max_points)]
 
     std = resid.std(ddof=1)

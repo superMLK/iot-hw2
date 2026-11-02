@@ -10,7 +10,7 @@ import statsmodels.api as sm
 from statsmodels.tsa.ar_model import AutoReg, ar_select_order
 
 from .config import DatasetConfig, PipelineError
-from .evaluation import cross_validate, even_sample_indices, regression_metrics, residual_diagnostics
+from .evaluation import cross_validate, even_sample_indices, regression_metrics, residual_diagnostics, stable_order
 from .preparation import Prepared
 
 Z_95 = 1.959963984540054
@@ -123,10 +123,10 @@ def build_ols_model(
     # 預測點：SLR 依特徵值排序，MLR 依預測值排序；House 均勻抽樣至 max_points
     if mtype == "slr":
         f = cols[0]
-        order = np.argsort(prep.X_test[f].values, kind="mergesort")
+        order = stable_order(prep.X_test[f].values, actual_raw)
         x_kind, x_label = "feature", feature_labels.get(f, f)
     else:
-        order = np.argsort(pred_m, kind="mergesort")
+        order = stable_order(pred_m, actual_raw)
         x_kind, x_label = "index", "測試集樣本（依預測值由小到大排序）"
     order = order[even_sample_indices(len(order), cfg.max_points)]
 
@@ -135,7 +135,7 @@ def build_ols_model(
     else:
         # x 為該點在完整測試集中依預測值排序的名次（抽樣後仍保留原名次）
         rank = np.empty(len(pred_m), dtype=int)
-        rank[np.argsort(pred_m, kind="mergesort")] = np.arange(1, len(pred_m) + 1)
+        rank[stable_order(pred_m, actual_raw)] = np.arange(1, len(pred_m) + 1)
         xs = rank[order].tolist()
 
     prediction: dict[str, Any] = {
