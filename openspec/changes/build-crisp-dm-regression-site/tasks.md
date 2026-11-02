@@ -55,12 +55,12 @@
 ## 7. 部署
 
 - [x] 7.1 撰寫 `.github/workflows/deploy.yml`（push main 與 workflow_dispatch、pages/id-token 權限、Python 3.11 安裝與管線、Node 20 `npm ci`/`npm run test`/`npm run build`、upload-pages-artifact 與 deploy-pages）；本機依同樣順序執行全部指令都成功
-- [ ] 7.2 【需使用者確認】`git init`、建立 GitHub repo（名稱與可見性由使用者決定）、設定 Pages Source 為 GitHub Actions、推送 `main`；確認 Actions 全部步驟成功
-- [ ] 7.3 開啟 Pages 網址與 `#house-evaluation` 子路徑網址，確認資源與 JSON 都正常載入，並在手機寬度與深色模式下快速檢查一次
+- [x] 7.2 【需使用者確認】`git init`、建立 GitHub repo（名稱與可見性由使用者決定）、設定 Pages Source 為 GitHub Actions、推送 `main`；確認 Actions 全部步驟成功
+- [x] 7.3 開啟 Pages 網址與 `#house-evaluation` 子路徑網址，確認資源與 JSON 都正常載入，並在手機寬度與深色模式下快速檢查一次
 
 ## 8. README
 
-- [ ] 8.1 撰寫 `README.md`（簡介與網站連結、資料集來源與授權、架構圖、本機執行、部署方式、CRISP-DM 六步驟摘要、主要結果表、目錄結構）；結果表以小腳本從 JSON 產生後貼入，並在乾淨 clone 中照 README 指令執行成功
+- [x] 8.1 撰寫 `README.md`（簡介與網站連結、資料集來源與授權、架構圖、本機執行、部署方式、CRISP-DM 六步驟摘要、主要結果表、目錄結構）；結果表以小腳本從 JSON 產生後貼入，並在乾淨 clone 中照 README 指令執行成功
 
 ## 9. Word 報告
 
