@@ -58,7 +58,7 @@ def prepare_bike(raw: pd.DataFrame, cfg: DatasetConfig) -> Prepared:
 
     df["dteday"] = pd.to_datetime(df["dteday"])
     df = df.sort_values("dteday").reset_index(drop=True)
-    log.add("依日期排序", "後續以時間順序切分訓練集與測試集，並作為 AR 模型的時間軸", f"{len(df)} 筆依 dteday 由舊到新排序")
+    log.add("依日期排序", "後續以時間順序切分訓練集與測試集，並作為 AR 模型的時間軸", f"{len(df):,} 筆依 dteday 由舊到新排序")
 
     df = df.drop(columns=["casual", "registered"])
     log.add(
@@ -97,8 +97,8 @@ def prepare_bike(raw: pd.DataFrame, cfg: DatasetConfig) -> Prepared:
     log.add(
         "依時間順序切分（前 80% 訓練、後 20% 測試）",
         "資料是時間序列，隨機切分會讓模型看到「未來」的資料，高估預測能力",
-        f"訓練集 {n_train} 筆（{dates.iloc[0].date()} ～ {dates.iloc[n_train - 1].date()}），"
-        f"測試集 {len(X) - n_train} 筆（{dates.iloc[n_train].date()} ～ {dates.iloc[-1].date()}）",
+        f"訓練集 {n_train:,} 筆（{dates.iloc[0].date()} ～ {dates.iloc[n_train - 1].date()}），"
+        f"測試集 {len(X) - n_train:,} 筆（{dates.iloc[n_train].date()} ～ {dates.iloc[-1].date()}）",
     )
 
     features = list(X.columns)
@@ -181,7 +181,7 @@ def prepare_house(raw: pd.DataFrame, cfg: DatasetConfig) -> Prepared:
     log.add(
         "目標變數取 log(price)",
         "房價右偏嚴重，取對數後分布接近常態、殘差變異較穩定；預測值與區間會以 exp 轉回原始價格顯示",
-        f"{len(price)} 筆目標值轉為對數尺度",
+        f"{len(price):,} 筆目標值轉為對數尺度",
     )
 
     X = df.astype(float)
@@ -191,7 +191,7 @@ def prepare_house(raw: pd.DataFrame, cfg: DatasetConfig) -> Prepared:
     log.add(
         "隨機切分 80/20（random_state = 42）",
         "各筆交易彼此獨立，沒有時間依賴，可以隨機切分；固定亂數種子讓結果可重現",
-        f"訓練集 {len(idx_train)} 筆，測試集 {len(idx_test)} 筆",
+        f"訓練集 {len(idx_train):,} 筆，測試集 {len(idx_test):,} 筆",
     )
 
     def take(obj, idx):

@@ -28,11 +28,11 @@ plt.rcParams.update(
     }
 )
 
-BAND = "#2a6fdb"      # 區間帶：同一色相，以透明度區分
+BAND = "#2a78d6"      # 區間帶：同一色相，以透明度區分（與網站配色一致）
 CI_ALPHA = 0.35
 PI_ALPHA = 0.15
-ACTUAL = "#5f6b7a"
-PRED = "#e0661b"
+ACTUAL = "#6f6e68"
+PRED = "#eb6834"
 TRAIN = "#9aa5b1"
 
 PNG_META = {"Software": None}
@@ -66,7 +66,10 @@ def prediction_figure(model: dict[str, Any], ds_name: str, path: Path, compact: 
     pred = model["prediction"]
     pts = pred["points"]
     kind = pred["x_kind"]
-    fig, ax = plt.subplots(figsize=(7.5, 3.2) if compact else (9, 4.8))
+    if compact:
+        # 資訊圖表用：畫面約 8.5 cm 寬，字級放大以便列印閱讀
+        plt.rcParams.update({"font.size": 12, "axes.labelsize": 12, "xtick.labelsize": 11, "ytick.labelsize": 11})
+    fig, ax = plt.subplots(figsize=(6.4, 3.1) if compact else (9, 4.8))
 
     if kind == "feature" and pred.get("band"):
         band = pred["band"]
@@ -97,8 +100,11 @@ def prediction_figure(model: dict[str, Any], ds_name: str, path: Path, compact: 
         _price_axis(ax, "y")
     if not compact:
         ax.set_title(f"{ds_name}：{model['label']}")
-    ax.legend(loc="upper left", fontsize=8, frameon=False)
-    return _save(fig, path)
+    ax.legend(loc="upper left", fontsize=10 if compact else 8, frameon=False)
+    name = _save(fig, path)
+    if compact:
+        plt.rcParams.update({"font.size": 10, "axes.labelsize": 10, "xtick.labelsize": 10, "ytick.labelsize": 10})
+    return name
 
 
 def actual_vs_pred_figure(model: dict[str, Any], ds_name: str, path: Path, log_axis: bool = False) -> str:

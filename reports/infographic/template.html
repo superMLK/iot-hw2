@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>CRISP-DM 線性回歸分析 資訊圖表</title>
+<!-- 由 build_infographic.py 代入雙大括號佔位符；所有數值取自管線輸出 JSON -->
+<style>
+  @page { size: 210mm 297mm; margin: 0; }
+  :root {
+    --ink: #0b0b0b; --ink-2: #4a4945; --muted: #74736d;
+    --paper: #fcfcfb; --tint: #f0efec; --line: #dedcd5;
+    --blue: #2a78d6; --blue-ink: #1c5cab; --blue-tint: #e3eefb;
+    --orange: #eb6834; --orange-tint: #fff3e6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); }
+  body {
+    width: 210mm; height: 297mm; overflow: hidden;
+    font-family: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    color: var(--ink); font-size: 11pt; line-height: 1.45;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { padding: 12mm 13mm 10mm; height: 297mm; display: flex; flex-direction: column; gap: 3.4mm; }
+
+  header h1 { margin: 0; font-size: 25pt; line-height: 1.2; letter-spacing: 0.5pt; }
+  header h1 span { color: var(--blue); }
+  header p { margin: 1.5mm 0 0; color: var(--ink-2); font-size: 11.5pt; }
+
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.6mm; }
+  .flow div {
+    background: var(--blue); color: #fff; border-radius: 2mm; padding: 2mm 1mm; text-align: center;
+    font-weight: 700; font-size: 11pt; line-height: 1.25; position: relative;
+  }
+  .flow div small { display: block; font-weight: 400; font-size: 11pt; opacity: 0.9; }
+  .flow div:nth-child(even) { background: var(--blue-ink); }
+
+  .section-title { font-size: 13pt; font-weight: 700; margin: 0 0 1.5mm; display: flex; align-items: center; gap: 2mm; }
+  .section-title::before { content: ""; width: 1.4mm; height: 5mm; border-radius: 1mm; background: var(--orange); }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .card { background: #fff; border: 0.3mm solid var(--line); border-radius: 3mm; padding: 3mm 3.6mm; }
+  .card h2 { margin: 0 0 1.2mm; font-size: 14pt; }
+  .card .src { color: var(--ink-2); font-size: 11pt; margin-bottom: 2mm; word-break: break-all; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; }
+  .fact { background: var(--tint); border-radius: 2mm; padding: 1.6mm 2mm; }
+  .fact b { display: block; font-size: 17pt; line-height: 1.15; font-variant-numeric: tabular-nums; }
+  .fact span { font-size: 11pt; color: var(--ink-2); }
+
+  .model { display: flex; flex-direction: column; gap: 2.5mm; }
+  .model-name { font-size: 11pt; color: var(--ink-2); margin-bottom: 1.5mm; }
+  .big { display: grid; grid-template-columns: 1fr 1.25fr; gap: 2mm; }
+  .metric { background: var(--blue-tint); border-radius: 2mm; padding: 1.6mm 2.6mm; }
+  .metric b { display: block; font-size: 24pt; line-height: 1.1; color: var(--blue-ink); font-variant-numeric: tabular-nums; }
+  .metric span { font-size: 11pt; color: var(--ink-2); }
+  .chart img { width: 100%; display: block; border-radius: 1.5mm; }
+  .chart p { margin: 1mm 0 0; font-size: 11pt; color: var(--ink-2); }
+
+  .fs { display: grid; grid-template-columns: 0.85fr 0.85fr 1.6fr; gap: 4mm; }
+  .fs .card { display: flex; flex-direction: column; justify-content: center; }
+  .arrow { font-size: 26pt; font-weight: 800; color: var(--blue-ink); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .arrow small { display: block; font-size: 11pt; font-weight: 400; color: var(--ink-2); margin-bottom: 1mm; }
+  .fs ul { margin: 0; padding-left: 4.5mm; }
+  .fs li { margin: 0.6mm 0; }
+
+  footer { margin-top: auto; display: grid; grid-template-columns: 1fr 30mm; gap: 4mm; align-items: center;
+           background: var(--orange-tint); border-radius: 3mm; padding: 3mm 4mm; }
+  footer .url { font-size: 14pt; font-weight: 700; color: var(--blue-ink); word-break: break-all; }
+  footer p { margin: 0.8mm 0 0; font-size: 11pt; color: var(--ink-2); }
+  footer .qr svg { width: 30mm; height: 30mm; display: block; background: #fff; border-radius: 1.5mm; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>以 <span>CRISP-DM</span> 進行線性回歸分析</h1>
+    <p>單純／多元線性回歸 · Auto Regression｜兩個 Kaggle 資料集｜預測附 95% 信賴與預測區間</p>
+  </header>
+
+  <div class="flow">
+    <div>① 業務理解<small>Business</small></div>
+    <div>② 資料理解<small>Data</small></div>
+    <div>③ 資料準備<small>Preparation</small></div>
+    <div>④ 建模<small>Modeling</small></div>
+    <div>⑤ 評估<small>Evaluation</small></div>
+    <div>⑥ 部署<small>Deployment</small></div>
+  </div>
+
+  <section>
+    <div class="section-title">資料集</div>
+    <div class="cards">
+      <div class="card">
+        <h2>{{bike.name}}</h2>
+        <div class="src">來源：Kaggle／UCI · {{bike.license}}</div>
+        <div class="facts">
+          <div class="fact"><b>{{bike.rows}}</b><span>筆（天）</span></div>
+          <div class="fact"><b>{{bike.features}}</b><span>個特徵</span></div>
+          <div class="fact"><b>{{bike.target}}</b><span>目標變數</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>{{house.name}}</h2>
+        <div class="src">來源：Kaggle · {{house.license}}</div>
+        <div class="facts">
+          <div class="fact"><b>{{house.rows}}</b><span>筆交易</span></div>
+          <div class="fact"><b>{{house.features}}</b><span>個特徵</span></div>
+          <div class="fact"><b>{{house.target}}</b><span>目標變數</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">最佳模型與關鍵指標（測試集）</div>
+    <div class="cards">
+      <div class="card">
+        <div class="model-name"><b>Bike：</b>{{bike.best_label}}</div>
+        <div class="model">
+          <div class="big">
+            <div class="metric"><b>{{bike.r2}}</b><span>R²</span></div>
+            <div class="metric"><b>{{bike.rmse}}</b><span>RMSE（次）</span></div>
+          </div>
+          <div class="chart">
+            <img src="{{bike.chart}}" alt="Bike 最佳模型預測圖">
+            <p>深色帶＝信賴區間，淺色帶＝預測區間</p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="model-name"><b>House：</b>{{house.best_label}}</div>
+        <div class="model">
+          <div class="big">
+            <div class="metric"><b>{{house.r2}}</b><span>R²（log 尺度）</span></div>
+            <div class="metric"><b>{{house.rmse}}</b><span>RMSE（美元）</span></div>
+          </div>
+          <div class="chart">
+            <img src="{{house.chart}}" alt="House 最佳模型預測圖">
+            <p>對數軸；轉回美元後區間上寬下窄</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">特徵選擇重點（相關係數 → VIF → 逐步回歸）</div>
+    <div class="fs">
+      <div class="card">
+        <div class="arrow">{{bike.n_candidates}} → {{bike.n_final}}<small>候選特徵 → 最終特徵</small></div>
+        <div>Bike：VIF 移除 {{bike.vif_removed}}</div>
+      </div>
+      <div class="card">
+        <div class="arrow">{{house.n_candidates}} → {{house.n_final}}<small>候選特徵 → 最終特徵</small></div>
+        <div>House：VIF 移除 {{house.vif_removed}}</div>
+      </div>
+      <div class="card">
+        <ul>
+          <li>Bike 移除 casual、registered（相加＝cnt，<b>資料洩漏</b>）</li>
+          <li>Bike 依時間切分 80/20，不偷看未來</li>
+          <li>House 以 log(price) 建模，zipcode 改用經緯度</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <div class="url">{{site_url}}</div>
+      <p>互動網站：切換資料集、瀏覽 CRISP-DM 六步驟、比較模型預測圖，也能輸入任意 CSV 網址即時檢視資料。</p>
+    </div>
+    <div class="qr">{{qr_svg}}</div>
+  </footer>
+</div>
+</body>
+</html>

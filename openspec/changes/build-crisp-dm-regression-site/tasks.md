@@ -64,13 +64,13 @@
 
 ## 9. Word 報告
 
-- [ ] 9.1 實作 `reports/build_report.py`：讀內容檔、JSON、PNG，產生封面、摘要、資料集介紹、CRISP-DM 六章（兩資料集各一小節）、結論與限制、參考資料；中文字型設定 `w:eastAsia`、標題用內建樣式、圖表自動編號；執行後確認 `reports/output/report.docx` 存在
-- [ ] 9.2 檢查報告：用 python-docx 讀回確認 11 個章節順序、第 4–9 章各有兩個小節、「圖 N」「表 N」從 1 連續編號；在 Word 中插入目錄確認標題被列入，並比對最佳模型 R²、RMSE 與網站相同
+- [x] 9.1 實作 `reports/build_report.py`：讀內容檔、JSON、PNG，產生封面、摘要、資料集介紹、CRISP-DM 六章（兩資料集各一小節）、結論與限制、參考資料；中文字型設定 `w:eastAsia`、標題用內建樣式、圖表自動編號；執行後確認 `reports/output/report.docx` 存在
+- [x] 9.2 檢查報告：用 python-docx 讀回確認 11 個章節順序、第 4–9 章各有兩個小節、「圖 N」「表 N」從 1 連續編號；在 Word 中插入目錄確認標題被列入，並比對最佳模型 R²、RMSE 與網站相同
 
 ## 10. A4 資訊圖表
 
-- [ ] 10.1 建立 `reports/infographic/template.html`（A4 直式、標題、六步驟流程條、兩資料集卡片、最佳模型 R² 與 RMSE 大字、簡化預測圖含區間帶、特徵選擇「N → M」、網址與 QR code、內文 ≥ 11 pt）
-- [ ] 10.2 實作 `build_infographic.py`：從 JSON 代入數值、產生 QR code、以 Playwright 匯出 PDF 與 PNG；確認 PDF 為單頁 A4、PNG 為 2480 × 3508，用手機掃 QR code 開啟網站
+- [x] 10.1 建立 `reports/infographic/template.html`（A4 直式、標題、六步驟流程條、兩資料集卡片、最佳模型 R² 與 RMSE 大字、簡化預測圖含區間帶、特徵選擇「N → M」、網址與 QR code、內文 ≥ 11 pt）
+- [x] 10.2 實作 `build_infographic.py`：從 JSON 代入數值、產生 QR code、以 Playwright 匯出 PDF 與 PNG；確認 PDF 為單頁 A4、PNG 為 2480 × 3508，用手機掃 QR code 開啟網站
 
 ## 11. 整體驗收
 
